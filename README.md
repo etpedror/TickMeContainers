@@ -95,7 +95,7 @@ The other webapps have similar Dockerfiles
 However, it's not very practical to have to build each container and start it one by one. That's when docker compose and docker swarm.
 Docker compose allows for the creation of multiple images in one step. Lets look at docker-compose.yml and docker-compose.override.yml.
 __*docker-compose.yml*__
-```dockerfile
+```yaml
 version: '3.4'
 
 services:
@@ -118,7 +118,7 @@ services:
       dockerfile: TickMePayments/Dockerfile
 ```
 __*docker-compose.override.yml*__
-```dockerfile
+```yaml
 version: '3.4'
 
 services:
@@ -165,7 +165,7 @@ Type `docker-compose -f docker-compose.yml -f docker-compose.override.yml up --n
 The other option is docker swarm. Docker Swarm is an orchestrator, which means it allows you a greater deal of control when deploying your images in the real world.
 
 You can check the swarm file, docker-compose-swarm.yml
-```dockerfile
+```yaml
 version: '3.4'
 
 services:
