@@ -64,6 +64,7 @@ public async Task<PaymentData> MakePayment(PaymentData paymentData)
 ```
 The application is now ready to run inside containers. Press the Start button and try to access your application on http://localhost:50080
 
+#### WHAT IS THIS MAGIC?
 What magic just happened? Well, Visual Studio generated a Dockerfile for each project, that, in a nutshell, has all the instructions to build a container. For the TickMe web application, it looks like this
 ```dockerfile
 FROM microsoft/dotnet:2.1-aspnetcore-runtime AS base
@@ -90,3 +91,135 @@ ENTRYPOINT ["dotnet", "TickMe.dll"]
 ```
 As you can see, we start with a basic .NET Core 2.1 image, we expose ports 50080 and 44380 to the outside world, then we copy our project into the container, we build it, publish it and finally, we tell docker to run _`dotnet TickMe.dll`_ when the container starts.
 The other webapps have similar Dockerfiles
+
+However, it's not very practical to have to build each container and start it one by one. That's when docker compose and docker swarm.
+Docker compose allows for the creation of multiple images in one step. Lets look at docker-compose.yml and docker-compose.override.yml.
+__*docker-compose.yml*__
+```dockerfile
+version: '3.4'
+
+services:
+  tickmetickets:
+    image: tickmetickets:latest
+    build:
+      context: .
+      dockerfile: TickMeTickets/Dockerfile
+
+  tickme:
+    image: tickme:latest
+    build:
+      context: .
+      dockerfile: TickMe/Dockerfile
+
+  tickmepayments:
+    image: tickmepayments:latest
+    build:
+      context: .
+      dockerfile: TickMePayments/Dockerfile
+```
+__*docker-compose.override.yml*__
+```dockerfile
+version: '3.4'
+
+services:
+  tickme:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_HTTPS_PORT=44380
+    ports:
+      - "50080:80"
+      - "44380:443"
+    volumes:
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+
+  tickmepayments:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_HTTPS_PORT=44381
+    ports:
+      - "50081:80"
+      - "44381:443"
+    volumes:
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+
+  tickmetickets:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_HTTPS_PORT=44382
+    ports:
+      - "50082:80"
+      - "44382:443"
+    volumes:
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+```
+When building the images, docker compose uses both files to generate the relevant images. You can try it too, using the command line. Press the __Windows__ key, type _`cmd`_ and on the command prompt, change into your solution directory.
+
+Type `docker-compose -f docker-compose.yml -f docker-compose.override.yml up --no-start` in the command prompt to create the images (you can also get the services running by replacing the `up --no-start` bit with `run`.
+
+The other option is docker swarm. Docker Swarm is an orchestrator, which means it allows you a greater deal of control when deploying your images in the real world.
+
+You can check the swarm file, docker-compose-swarm.yml
+```dockerfile
+version: '3.4'
+
+services:
+  tickme:
+    image: tickme:latest
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_HTTPS_PORT=44380
+    ports:
+      - target: 80
+        published: 50080
+        protocol: tcp
+        mode: host
+      - target: 443
+        published: 44380
+        protocol: tcp
+        mode: host
+    volumes:
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+    deploy:
+      mode: replicated
+      replicas: 1
+    entrypoint: dotnet TickMe.dll
+
+  tickmepayments:
+    image: tickmepayments:latest
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_HTTPS_PORT=44381
+    ports:
+      - "50081:80"
+      - "44381:443"
+    volumes:
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+    deploy:
+      replicas: 3
+
+  tickmetickets:
+    image: tickmetickets:latest
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_HTTPS_PORT=44382
+    ports:
+      - "50082:80"
+      - "44382:443"
+    volumes:
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+    deploy:
+      replicas: 1
+```
+As you can see, you get to specify how many instances of each service you want running and a lot of other parameters. Take a look at docker documentation for more information on that.
