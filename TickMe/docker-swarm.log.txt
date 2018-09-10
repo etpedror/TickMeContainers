@@ -1,0 +1,18 @@
+Sending build context to Docker daemon   5.29MB
+Step 1/18 : FROM microsoft/dotnet:2.1-aspnetcore-runtime AS base
+ ---> 251f1045c425
+Step 2/18 : WORKDIR /app
+ ---> Using cache
+ ---> 9214ca527562
+Step 3/18 : EXPOSE 50080
+ ---> Using cache
+ ---> f3f6ef25bea0
+Step 4/18 : EXPOSE 44380
+ ---> Using cache
+ ---> 6eb0bbd4d7d8
+Step 5/18 : FROM microsoft/dotnet:2.1-sdk AS build
+ ---> bde01d9ed6eb
+Step 6/18 : WORKDIR /src
+ ---> Using cache
+ ---> bc17f53c5cf4
+Step 7/18 : COPY TickMe/TickMe.csproj TickMe/

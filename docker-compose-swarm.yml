@@ -2,19 +2,30 @@ version: '3.4'
 
 services:
   tickme:
+    image: tickme:latest
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
       - ASPNETCORE_HTTPS_PORT=44380
     ports:
-      - "50080:80"
-      - "44380:443"
+      - target: 80
+        published: 50080
+        protocol: tcp
+        mode: host
+      - target: 443
+        published: 44380
+        protocol: tcp
+        mode: host
     volumes:
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+    deploy:
+      mode: replicated
+      replicas: 1
+    entrypoint: dotnet TickMe.dll
 
   tickmepayments:
-    image: tickmepayments:dev
+    image: tickmepayments:latest
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
@@ -25,9 +36,11 @@ services:
     volumes:
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+    deploy:
+      replicas: 3
 
   tickmetickets:
-    image: tickmetickets:dev
+    image: tickmetickets:latest
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
@@ -38,3 +51,5 @@ services:
     volumes:
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+    deploy:
+      replicas: 1

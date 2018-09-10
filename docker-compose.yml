@@ -1,8 +1,22 @@
 version: '3.4'
 
 services:
+  tickmetickets:
+    image: tickmetickets:latest
+    build:
+      context: .
+      dockerfile: TickMeTickets/Dockerfile
+
   tickme:
-    image: ${DOCKER_REGISTRY}tickme
+    image: tickme:latest
     build:
       context: .
       dockerfile: TickMe/Dockerfile
+
+
+  tickmepayments:
+    image: tickmepayments:latest
+    build:
+      context: .
+      dockerfile: TickMePayments/Dockerfile
+

@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using TickMeHelpers;
 using TickMeHelpers.ApiModels;
@@ -37,12 +36,8 @@ namespace TickMeTickets.Controllers
         [HttpGet]
         public string Get()
         {
-            //var response = new HttpResponseMessage(HttpStatusCode.OK)
-            //{
-            //    Content = new StringContent("OK")
-            //};
-            //return response;
-            return "OK";
+            Response.StatusCode = (int)HttpStatusCode.OK;
+            return "{'status':'Service Up'}";
         }
         // POST api/tickets
         [HttpPost]
@@ -50,28 +45,33 @@ namespace TickMeTickets.Controllers
         {
             if (string.IsNullOrWhiteSpace(value))
             {
-                return "Bad Request 1";
+                Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return "{'error':'Bad Request'}";
             }
             var buyModel = JsonConvert.DeserializeObject<TicketBuyModel>(value);
             //var buyModel = value;
             if(buyModel == null|| buyModel.EventId == Guid.Empty || buyModel.UserId == Guid.Empty || string.IsNullOrWhiteSpace(buyModel.PaymentData))
             {
-                return "Bad Request 2";
+                Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return "{'error':'Bad Request'}";
             }
             var paymentData = JsonConvert.DeserializeObject<PaymentData>(buyModel.PaymentData);
             if(paymentData == null)
             {
-                return "Bad Request 3";
+                Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return "{'error':'Bad Request'}";
             }
             try
             {
                 var manager = TicketManager;
                 var ticket = await manager.IssueEventTicket(buyModel.EventId, buyModel.UserId, paymentData.Value, paymentData.TransactionData);
+                Response.StatusCode = (int)HttpStatusCode.OK;
                 return ticket.ToString();
             }
-            catch(Exception ex)
+            catch
             {
-                return ex.Message;
+                Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                return "{'error':'Server couldn't process ticket'}";
             }
         }
     }

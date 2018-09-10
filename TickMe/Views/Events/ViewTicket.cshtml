@@ -4,9 +4,7 @@
     ViewData["Title"] = "ViewTicket";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
 <h2>Ticket</h2>
-
 <div>
     <hr />
     <div class="row">
@@ -43,7 +41,5 @@
     <script type="text/javascript" src="~/js/jquery.qrcode.min.js"></script>
     <script>
         $('#qrcode').qrcode('@Model.ticket.ToString()');
-
     </script>
-
 }

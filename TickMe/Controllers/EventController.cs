@@ -5,7 +5,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Runtime.Serialization.Json;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -74,14 +76,24 @@ namespace TickMe.Controllers
             foreach (var ticket in tickets)
             {
                 var evnt = await EventManager.Get(ticket.EventId);
-                dynamic pdata = JObject.Parse(JsonConvert.DeserializeObject<PaymentData>(ticket.PaymentData).TransactionData);
+                var paymentData = JsonConvert.DeserializeObject<PaymentData>(ticket.PaymentData);
+                var paymentDate = "Unavailable information";
+                try
+                {
+                    dynamic pdata = JObject.Parse(paymentData.TransactionData);
+                    paymentDate = pdata.TransactionDate;
+                }
+                catch
+                {
+                    paymentDate = "Unavailable information";
+                }
                 var item = new MyEventsViewModel
                 {
                     Ticket = ticket,
                     EventName = evnt.Title,
                     StartMoment = evnt.StartMoment,
                     Duration = evnt.Duration,
-                    PaymentDate = pdata.TransactionDate
+                    PaymentDate = paymentDate
                 };
                 viewModel.Add(item);
             }
@@ -176,7 +188,6 @@ namespace TickMe.Controllers
                 }
                 if (paymentData.TransactionSuccessful)
                 {
-                    //var ticket = await TicketManager.IssueEventTicket(buyModel.evnt, buyModel.user, paymentData.ToString());
                     var ticketBuyModel = new TicketBuyModel()
                     {
                         EventId = buyModel.evnt.Id,
@@ -265,41 +276,48 @@ namespace TickMe.Controllers
 
         public async Task<Ticket> IssueTicket(TicketBuyModel buyModel)
         {
-            using (var client = new HttpClient())
+            using (var httpClientHandler = new HttpClientHandler())
             {
-                var request = new HttpRequestMessage
+                httpClientHandler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; };
+                using (var client = new HttpClient(httpClientHandler))
                 {
-                    RequestUri = new Uri(Configuration["TicketApiUrl"]),
-                    Method = HttpMethod.Post
-                };
-                request.Content = new StringContent(JsonConvert.SerializeObject(buyModel));
-                request.Content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+                    var request = new HttpRequestMessage
+                    {
+                        RequestUri = new Uri(Configuration["TicketApiUrl"]),
+                        Method = HttpMethod.Post
+                    };
+                    request.Content = new StringContent(JsonConvert.SerializeObject(buyModel));
+                    request.Content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
 
-                //request.Content.Headers.ContentType = new MediaTypeHeaderValue(parameters.ContentType);
+                    //request.Content.Headers.ContentType = new MediaTypeHeaderValue(parameters.ContentType);
 
-                var result = client.SendAsync(request).Result;
-                result.EnsureSuccessStatusCode();
-                return JsonConvert.DeserializeObject<Ticket>(await result.Content.ReadAsStringAsync());
+                    var result = client.SendAsync(request).Result;
+                    result.EnsureSuccessStatusCode();
+                    return JsonConvert.DeserializeObject<Ticket>(await result.Content.ReadAsStringAsync());
+                }
             }
         }
 
         public async Task<PaymentData> MakePayment(PaymentData paymentData)
         {
-            using (var client = new HttpClient())
+            using (var httpClientHandler = new HttpClientHandler())
             {
-                var request = new HttpRequestMessage
+                httpClientHandler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => { return true; };
+                using (var client = new HttpClient(httpClientHandler))
                 {
-                    RequestUri = new Uri(Configuration["PaymentApiUrl"]),
-                    Method = HttpMethod.Post
-                };
-                request.Content = new StringContent(JsonConvert.SerializeObject(paymentData));
-                request.Content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
-                
-                var result = client.SendAsync(request).Result;
-                result.EnsureSuccessStatusCode();
-                return JsonConvert.DeserializeObject<PaymentData>(await result.Content.ReadAsStringAsync());
+                    var request = new HttpRequestMessage
+                    {
+                        RequestUri = new Uri(Configuration["PaymentApiUrl"]),
+                        Method = HttpMethod.Post
+                    };
+                    request.Content = new StringContent(JsonConvert.SerializeObject(paymentData));
+                    request.Content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+
+                    var result = client.SendAsync(request).Result;
+                    result.EnsureSuccessStatusCode();
+                    return JsonConvert.DeserializeObject<PaymentData>(await result.Content.ReadAsStringAsync());
+                }
             }
         }
-
     }
 }

@@ -3,12 +3,13 @@
   <PropertyGroup Label="Globals">
     <ProjectVersion>2.1</ProjectVersion>
     <DockerTargetOS>Linux</DockerTargetOS>
-    <ProjectGuid>2f5f574a-a933-4bfc-8d82-3d9bb4730d4c</ProjectGuid>
+    <ProjectGuid>705a515a-1840-4a70-8cdd-ce4041ea9e6f</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
-    <DockerServiceUrl>{Scheme}://localhost:{ServicePort}</DockerServiceUrl>
-    <DockerServiceName>tickme</DockerServiceName>
+    <DockerServiceUrl>{Scheme}://localhost:{ServicePort}/api/values</DockerServiceUrl>
+    <DockerServiceName>tickmetickets</DockerServiceName>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="docker-compose-swarm.yml" />
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
