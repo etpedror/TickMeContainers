@@ -223,3 +223,5 @@ services:
       replicas: 1
 ```
 As you can see, you get to specify how many instances of each service you want running and a lot of other parameters. Take a look at docker documentation for more information on that.
+
+# CONGATULATIONS. YOU HAVE JUST CONTAINERIZED AN APPLICATION
